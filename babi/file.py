@@ -1018,7 +1018,10 @@ class File:
             stdscr: curses.window,
             dim: Dim,
     ) -> None:
-        stdscr.move(*self.buf.cursor_position(dim))
+        ## simple fix for line number.
+        dim = Dim(dim.x + self.line_num_width, dim.y, dim.width - self.line_num_width, dim.height)
+        y, x = self.buf.cursor_position(dim)
+        stdscr.move(y, x + self.line_num_width)
 
     def draw(self, stdscr: curses.window, dim: Dim) -> None:
         to_display = min(self.buf.displayable_count, dim.height)
@@ -1026,10 +1029,17 @@ class File:
         for file_hl in self._file_hls:
             file_hl.highlight_until(self.buf, self.buf.file_y + to_display)
 
+        ## simple fix for line number.
+        self.line_num_width = max(len(str(len(self.buf))), 2)
+        dim = Dim(dim.x + self.line_num_width, dim.y, dim.width - self.line_num_width, dim.height)
+
         for i in range(to_display):
             draw_y = i + dim.y
             l_y = self.buf.file_y + i
-            stdscr.insstr(draw_y, 0, self.buf.rendered_line(l_y, dim))
+            ## simple fix for line number.
+            l_no = str(l_y+1).rjust(self.line_num_width)
+            stdscr.insstr(draw_y, 0, l_no, curses.A_REVERSE)
+            stdscr.insstr(draw_y, self.line_num_width, self.buf.rendered_line(l_y, dim))
 
             l_x = self.buf.line_x(dim) if l_y == self.buf.y else 0
             l_x_max = l_x + dim.width
@@ -1065,7 +1075,8 @@ class File:
                     else:
                         h_e_x = r_end - l_x
 
-                    stdscr.chgat(draw_y, h_s_x, h_e_x - h_s_x, region.attr)
+                    ## simple fix for line number.
+                    stdscr.chgat(draw_y, self.line_num_width + h_s_x, h_e_x - h_s_x, region.attr)
 
         for i in range(to_display, dim.height):
             stdscr.move(i + dim.y, 0)
