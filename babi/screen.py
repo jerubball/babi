@@ -8,12 +8,12 @@ import importlib.metadata
 import os
 import re
 import signal
-import sre_parse
 import subprocess
 import sys
 from collections.abc import Callable
 from collections.abc import Generator
 from re import Pattern
+from re._parser import parse_template  # XXX: private api
 from types import FrameType
 from typing import NamedTuple
 
@@ -512,7 +512,7 @@ class Screen:
             )
             if response is not PromptResult.CANCELLED:
                 try:
-                    sre_parse.parse_template(response, search_response)
+                    parse_template(response, search_response)
                 except re.error:
                     self.status.update('invalid replacement string')
                 else:
